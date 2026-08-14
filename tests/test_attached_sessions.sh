@@ -9,6 +9,8 @@ fi
 . ../liquidprompt --no-activate
 
 LP_ENABLE_ATTACHED_SESSIONS=1
+LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=0
+LP_ENABLE_MULTIPLEXER=1
 LP_ENABLE_DETACHED_SESSIONS=1
 LP_ENABLE_JOBS=1
 LP_MARK_JOBS_SEPARATOR="/"
@@ -186,6 +188,61 @@ sub    detached
   NO_COL=""
   _lp_jobcount_color
   assertEquals "Jobcount color with attached and detached sessions" "[D]1d/[A]1r" "$lp_jobcount_color"
+}
+
+function test_attached_sessions_exclude_current {
+  tmux() {
+    printf '%s' "0: 1 windows [179x96] (attached)
+1: 1 windows [179x96] (attached)
+"
+  }
+  screen() {
+    printf '%s' "	12345.pts-0.host	(08/14/2026 10:00:00 AM)	(Attached)
+	12346.pts-1.host	(08/14/2026 10:00:00 AM)	(Attached)
+"
+  }
+  shpool() {
+    printf '%s' "s1	attached
+s2	attached
+"
+  }
+  herdr() {
+    printf '%s' "NAME   STATUS
+h1     attached
+h2     attached
+"
+  }
+
+  LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=0
+  TMUX=1
+  _lp_attached_sessions
+  assertEquals "Count all attached when EXCLUDE_CURRENT=0" "8" "$lp_attached_sessions"
+
+  LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=1
+  TMUX=1
+  _lp_attached_sessions
+  assertEquals "Exclude current session inside tmux" "7" "$lp_attached_sessions"
+
+  unset TMUX
+  TERM=screen-256color
+  _lp_attached_sessions
+  assertEquals "Exclude current session inside screen" "7" "$lp_attached_sessions"
+
+  TERM=dumb
+  SHPOOL_SESSION_NAME=s1
+  _lp_attached_sessions
+  assertEquals "Exclude current session inside shpool" "7" "$lp_attached_sessions"
+
+  unset SHPOOL_SESSION_NAME
+  HERDR_SESSION=h1
+  _lp_attached_sessions
+  assertEquals "Exclude current session inside herdr" "7" "$lp_attached_sessions"
+
+  unset HERDR_SESSION HERDR_SESSION_NAME HERDR_ENV
+  _lp_attached_sessions
+  assertEquals "Do not exclude current session when outside multiplexer" "8" "$lp_attached_sessions"
+
+  LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=0
 }
 
 . ./shunit2

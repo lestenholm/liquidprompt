@@ -380,7 +380,8 @@ Jobs
    Returns ``true`` if any attached running multiplexer sessions are found.
    Returns an integer count of how many sessions were found.
 
-   Can be enabled by :attr:`LP_ENABLE_ATTACHED_SESSIONS`.
+   Can be enabled by :attr:`LP_ENABLE_ATTACHED_SESSIONS`. The current session
+   can be excluded by :attr:`LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT`.
 
    .. versionadded:: 2.4
 

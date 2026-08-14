@@ -451,6 +451,20 @@ Features
 
    .. versionadded:: 2.1
 
+.. attribute:: LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT
+   :type: bool
+   :value: 0
+
+   Exclude the current session from the attached multiplexer session count.
+
+   When enabled (``1``) and running inside an active multiplexer session, the
+   current session is subtracted from the attached session count so that only
+   other attached sessions on the host are counted.
+
+   See also: :attr:`LP_ENABLE_ATTACHED_SESSIONS`.
+
+   .. versionadded:: 2.4
+
 .. attribute:: LP_ENABLE_ATTACHED_SESSIONS
    :type: bool
    :value: 0
