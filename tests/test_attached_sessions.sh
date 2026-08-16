@@ -9,7 +9,6 @@ fi
 . ../liquidprompt --no-activate
 
 LP_ENABLE_ATTACHED_SESSIONS=1
-LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=0
 LP_ENABLE_MULTIPLEXER=1
 LP_ENABLE_DETACHED_SESSIONS=1
 LP_ENABLE_JOBS=1
@@ -18,6 +17,11 @@ _LP_ENABLE_SCREEN=1
 _LP_ENABLE_TMUX=1
 _LP_ENABLE_SHPOOL=1
 _LP_ENABLE_HERDR=1
+
+function setUp {
+  unset TMUX SHPOOL_SESSION_NAME HERDR_SESSION HERDR_SESSION_NAME HERDR_ENV
+  TERM=dumb
+}
 
 typeset -a screen_outputs screen_values shpool_outputs shpool_values tmux_outputs tmux_values herdr_outputs herdr_values
 
@@ -213,36 +217,40 @@ h2     attached
 "
   }
 
-  LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=0
-  TMUX=1
-  _lp_attached_sessions
-  assertEquals "Count all attached when EXCLUDE_CURRENT=0" "8" "$lp_attached_sessions"
-
-  LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=1
+  # 1. Inside tmux (subtract 1)
   TMUX=1
   _lp_attached_sessions
   assertEquals "Exclude current session inside tmux" "7" "$lp_attached_sessions"
 
+  # 2. Inside screen (subtract 1)
   unset TMUX
   TERM=screen-256color
   _lp_attached_sessions
   assertEquals "Exclude current session inside screen" "7" "$lp_attached_sessions"
 
+  # 3. Inside shpool (subtract 1)
   TERM=dumb
   SHPOOL_SESSION_NAME=s1
   _lp_attached_sessions
   assertEquals "Exclude current session inside shpool" "7" "$lp_attached_sessions"
 
+  # 4. Inside herdr (subtract 1)
   unset SHPOOL_SESSION_NAME
   HERDR_SESSION=h1
   _lp_attached_sessions
   assertEquals "Exclude current session inside herdr" "7" "$lp_attached_sessions"
 
+  # 5. Outside any multiplexer (do not subtract)
   unset HERDR_SESSION HERDR_SESSION_NAME HERDR_ENV
   _lp_attached_sessions
   assertEquals "Do not exclude current session when outside multiplexer" "8" "$lp_attached_sessions"
 
-  LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=0
+  # 6. Inside tmux but LP_ENABLE_MULTIPLEXER=0 (multiplexer detection disabled, do not subtract)
+  TMUX=1
+  LP_ENABLE_MULTIPLEXER=0
+  _lp_attached_sessions
+  assertEquals "Do not exclude current session when LP_ENABLE_MULTIPLEXER=0" "8" "$lp_attached_sessions"
+  LP_ENABLE_MULTIPLEXER=1
 }
 
 . ./shunit2

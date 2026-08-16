@@ -630,7 +630,6 @@ __lp_source_config() {
     LP_ENABLE_JOBS=${LP_ENABLE_JOBS:-1}
     LP_ENABLE_DETACHED_SESSIONS=${LP_ENABLE_DETACHED_SESSIONS:-1}
     LP_ENABLE_ATTACHED_SESSIONS=${LP_ENABLE_ATTACHED_SESSIONS:-0}
-    LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT=${LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT:-0}
     LP_ENABLE_LOAD=${LP_ENABLE_LOAD:-1}
     LP_ENABLE_BATT=${LP_ENABLE_BATT:-1}
     LP_ENABLE_RAM=${LP_ENABLE_RAM:-1}
@@ -2906,7 +2905,7 @@ _lp_attached_sessions() {
     (( _LP_ENABLE_SHPOOL )) && count+=$(shpool list 2> /dev/null | GREP_OPTIONS='' \grep -c '[[:space:]]attached$')
     (( _LP_ENABLE_HERDR )) && count+=$(herdr session list 2> /dev/null | GREP_OPTIONS='' \grep -c '[[:space:]]\(running\|attached\)\([[:space:]]\|$\)')
 
-    if (( ${LP_ATTACHED_SESSIONS_EXCLUDE_CURRENT:-0} )) && _lp_multiplexer && (( count > 0 )); then
+    if _lp_multiplexer && (( count > 0 )); then
         (( count-- ))
     fi
 
