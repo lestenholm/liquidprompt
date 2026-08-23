@@ -457,6 +457,9 @@ Features
 
    Display the number of attached running multiplexer sessions.
 
+   If currently running inside an active multiplexer session, the current
+   session is excluded from the count.
+
    Will be disabled if none of ``screen``, ``shpool``, ``tmux``, or
    ``herdr`` are found.
 
