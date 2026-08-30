@@ -643,6 +643,7 @@ __lp_source_config() {
     LP_ENABLE_BZR=${LP_ENABLE_BZR:-1}
     LP_ENABLE_VCS_LINES=${LP_ENABLE_VCS_LINES:-1}
     LP_ENABLE_VCS_REMOTE=${LP_ENABLE_VCS_REMOTE:-0}
+    LP_ENABLE_VCS_RESOLVE_SYMLINKS=${LP_ENABLE_VCS_RESOLVE_SYMLINKS:-0}
     LP_ENABLE_TIME=${LP_ENABLE_TIME:-0}
     LP_TIME_ANALOG=${LP_TIME_ANALOG:-0}
     LP_ENABLE_RUNTIME=${LP_ENABLE_RUNTIME:-1}
@@ -1338,6 +1339,10 @@ __lp_floating_scale() {
               lp_pwd_tilde=$(print -n -r -D "${1:-$PWD}")
           }
       fi
+
+      __lp_physical_pwd() {
+          lp_physical_pwd="${PWD:A}"
+      }
   else
       # Bash version
       __lp_pwd_tilde() {
@@ -1345,6 +1350,10 @@ __lp_floating_scale() {
           # substitution differently
           local _path="${1:-$PWD}" tilde="~"
           lp_pwd_tilde="${_path/#$HOME/$tilde}"
+      }
+
+      __lp_physical_pwd() {
+          lp_physical_pwd="$(pwd -P 2>/dev/null)"
       }
   fi
 
@@ -2968,9 +2977,9 @@ _lp_jobcount_color() {
 ######################
 
 _lp_are_vcs_enabled() {
-    local _path
+    local _path _current="${1:-$PWD}"
     for _path in ${LP_DISABLED_VCS_PATHS[@]+"${LP_DISABLED_VCS_PATHS[@]}"}; do
-        if [[ -n "$_path" && "$PWD" == "$_path"* ]]; then
+        if [[ -n "$_path" && "$_current" == "$_path"* ]]; then
             return 1
         fi
     done
@@ -2997,30 +3006,51 @@ _lp_find_vcs() {
     fi
 
     if [[ -z $lp_vcs_type ]]; then
-        local vcs
-        lp_vcs_root="$PWD"
-        while [[ -n "$lp_vcs_root" ]]; do
-            for vcs in ${_LP_ENABLED_VCSS[@]+"${_LP_ENABLED_VCSS[@]}"}; do
-                lp_vcs_dir="$lp_vcs_root/.$vcs"
-                if [[ -d "$lp_vcs_dir" ]]; then
-                    lp_vcs_type="$vcs"
-                    break 2
-                fi
-            done
-            unset lp_vcs_dir
+        local vcs search_path="$PWD" checked_physical=0
 
-            if (( LP_ENABLE_GIT )) && [[ -f "$lp_vcs_root/.git" ]]; then
-                lp_vcs_type="git"
-                lp_vcs_dir="$(\git rev-parse --git-dir 2>/dev/null)"
+        while true; do
+            lp_vcs_root="$search_path"
+            while [[ -n "$lp_vcs_root" ]]; do
+                for vcs in ${_LP_ENABLED_VCSS[@]+"${_LP_ENABLED_VCSS[@]}"}; do
+                    lp_vcs_dir="$lp_vcs_root/.$vcs"
+                    if [[ -d "$lp_vcs_dir" ]]; then
+                        lp_vcs_type="$vcs"
+                        break 2
+                    fi
+                done
+                unset lp_vcs_dir
+
+                if (( LP_ENABLE_GIT )) && [[ -f "$lp_vcs_root/.git" ]]; then
+                    lp_vcs_type="git"
+                    lp_vcs_dir="$(\git rev-parse --git-dir 2>/dev/null)"
+                    break
+                fi
+
+                if (( LP_ENABLE_FOSSIL )) && [[ -f "$lp_vcs_root/_FOSSIL_" || -f "$lp_vcs_root/.fslckout" ]]; then
+                    lp_vcs_type="fossil"
+                    return 0
+                fi
+
+                lp_vcs_root="${lp_vcs_root%/*}"
+            done
+
+            if [[ -n "$lp_vcs_type" ]] || (( ! LP_ENABLE_VCS_RESOLVE_SYMLINKS )) || (( checked_physical )); then
                 break
             fi
 
-            if (( LP_ENABLE_FOSSIL )) && [[ -f "$lp_vcs_root/_FOSSIL_" || -f "$lp_vcs_root/.fslckout" ]]; then
-                lp_vcs_type="fossil"
-                return 0
+            local lp_physical_pwd
+            __lp_physical_pwd
+            if [[ -n "$lp_physical_pwd" && "$lp_physical_pwd" != "$search_path" ]]; then
+                if ! _lp_are_vcs_enabled "$lp_physical_pwd"; then
+                    lp_vcs_type="disabled"
+                    lp_vcs_root=""
+                    return 2
+                fi
+                search_path="$lp_physical_pwd"
+                checked_physical=1
+            else
+                break
             fi
-
-            lp_vcs_root="${lp_vcs_root%/*}"
         done
     fi
 

@@ -65,6 +65,9 @@ this.
    .. versionchanged:: 2.2
       Added the *lp_vcs_specific_dir* return value.
 
+   .. versionchanged:: 2.3
+      Added support for resolving symbolic links via :attr:`LP_ENABLE_VCS_RESOLVE_SYMLINKS`.
+
 .. function:: _lp_are_vcs_enabled()
 
    Returns ``true`` if the current directory is not excluded by the config
