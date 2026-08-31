@@ -1213,9 +1213,9 @@ Features
    If enabled, Liquid Prompt will search the physical directory hierarchy
    if no VCS repository is found in the logical path hierarchy. This allows
    VCS information (such as Git branch, dirty status, stashes) to be displayed
-   when navigating into symlinked subdirectories within a repository.
+   when navigating into a symbolic link to a repository subdirectory.
 
-   .. versionadded:: 2.3
+   .. versionadded:: 2.4
 
 .. attribute:: LP_ENABLE_VCS_ROOT
    :type: bool
